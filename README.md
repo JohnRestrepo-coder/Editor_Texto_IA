@@ -1,34 +1,52 @@
-# AI Document Studio — paquete inicial Spec Kit
+# AI Document Studio (Editor_Texto_IA)
 
-Este paquete contiene la base inicial de especificaciones y contratos para iniciar el proyecto con Antigravity y Spec Kit.
+AI Document Studio es un editor de texto enriquecido tipo Word con asistencia de inteligencia artificial integrada para redactar, estructurar y exportar documentos de forma asistida y controlada.
 
-## Instrucciones de uso
+## 🚀 Características Principales
 
-1. Copia el contenido de esta carpeta en la raíz del repositorio de AI Document Studio.
-2. Revisa primero `ANTIGRAVITY_BRIEF.txt`.
-3. Revisa y aprueba `.specify/memory/constitution.md`.
-4. Ejecuta el flujo de Spec Kit disponible en tu instalación. No asumas nombres de comandos: verifica los comandos de la versión instalada.
-5. Usa las especificaciones numeradas como fuente de verdad. No implementes funcionalidades sin revisar `spec.md`, `plan.md`, `tasks.md` y los contratos correspondientes.
-6. Completa las decisiones marcadas como `PENDIENTE` antes de implementar los módulos que dependan de ellas.
+- **Editor Enriquecido Unificado:** Basado en Tiptap OSS, soporta párrafos, encabezados, negrita, cursiva, subrayado, listas, citas y tablas.
+- **Modo Libre y Modo Plantilla:** Un único editor para documentos desde cero o basados en plantillas.
+- **Control de Versión Optimista:** Prevención de sobrescritura silenciosa ante ediciones simultáneas (`expected_version`).
+- **Arquitectura Monolítica Modular:** Backend desacoplado en FastAPI con SQLite/SQLAlchemy y frontend React + TypeScript + Vite.
+- **Especificaciones Formales con Spec Kit:** Gobernanza bajo SDD (Spec-Driven Development), constitution aprobada y contratos versionados.
 
-## Estado
+## 📁 Estructura del Proyecto
 
-Estos documentos son una propuesta inicial de diseño. No son prueba de que el código exista ni de que las tecnologías estén instaladas. Los campos y endpoints son contratos iniciales que deben validarse y versionarse.
+```text
+├── .specify/             # Gobernanza y constitution de Spec Kit 1.2.2
+├── docs/                 # Contratos OpenAPI y decisiones arquitectónicas (ADRs)
+├── specs/                # Especificaciones formales por feature (001 a 004)
+├── backend/              # API modular FastAPI + Pydantic v2 + SQLAlchemy
+│   ├── app/              # Configuración, base de datos y módulos de dominio
+│   └── tests/            # Suite de pruebas unitarias y de esquema
+├── frontend/             # SPA React 18/19 + TypeScript + Vite + Tailwind + Tiptap
+│   └── src/              # Componentes del editor, toolbar y sidebar
+└── storage/              # Almacenamiento local protegido para desarrollo
+```
 
-## Decisiones confirmadas por el usuario
+## 🛠️ Instrucciones de Ejecución Local
 
-- Editor: Tiptap OSS.
-- Plantillas Word: ambos escenarios, creación desde cero y carga/relleno de DOCX existentes.
-- Proveedores IA: integrar uno inicialmente, conservando una abstracción para futuros proveedores.
-- Generación: priorizar por sección. La generación completa coordina las secciones.
-- Arquitectura: monolito modular para el PMV.
+### 1. Backend (FastAPI)
+```bash
+# Activar entorno virtual
+.\.venv\Scripts\Activate.ps1
 
-## Decisiones pendientes
+# Ejecutar el servidor backend
+uvicorn backend.app.main:app --reload --port 8000
+```
+La API estará disponible en `http://127.0.0.1:8000` con documentación interactiva Swagger en `/docs`.
 
-- Proveedor/modelo de IA inicial.
-- Versiones concretas de dependencias.
-- Política de autenticación y autorización según despliegue.
-- Almacenamiento de archivos para producción.
-- Límites máximos de tamaño y formatos de carga.
-- Estrategia definitiva de exportación DOCX para documentos nativos.
-- Reglas de fidelidad y documentos patrón para pruebas de exportación.
+### 2. Frontend (React + Vite)
+```bash
+cd frontend
+npm run dev
+```
+La aplicación web estará disponible en `http://localhost:5173`.
+
+### 3. Ejecutar Pruebas
+```bash
+.\.venv\Scripts\pytest -v backend/tests
+```
+
+## 📄 Licencia
+Este proyecto se distribuye bajo la licencia especificada en [LICENSE](LICENSE).
