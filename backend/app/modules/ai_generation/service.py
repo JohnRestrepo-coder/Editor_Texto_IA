@@ -32,7 +32,9 @@ class AIGenerationService:
     def generate_section(
         cls, db: Session, req: SectionGenerationRequest
     ) -> GenerationResponse:
-        document = db.query(DocumentModel).filter(DocumentModel.id == req.document_id).first()
+        document = (
+            db.query(DocumentModel).filter(DocumentModel.id == req.document_id).first()
+        )
         if not document:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -111,7 +113,9 @@ class AIGenerationService:
             status=status_val,
             user_instructions=req.user_instructions,
             content=proposed_content,
-            original_section_content={"content": [n.model_dump() for n in original_nodes]}
+            original_section_content={
+                "content": [n.model_dump() for n in original_nodes]
+            }
             if original_nodes
             else None,
             provider=llm_res.provider if llm_res else "unknown",
@@ -163,7 +167,9 @@ class AIGenerationService:
                 detail=f"La propuesta se encuentra en estado '{gen.status}' y no puede ser aceptada.",
             )
 
-        document = db.query(DocumentModel).filter(DocumentModel.id == gen.document_id).first()
+        document = (
+            db.query(DocumentModel).filter(DocumentModel.id == gen.document_id).first()
+        )
         if not document:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -236,14 +242,19 @@ class AIGenerationService:
     def orchestrate_full_generation(
         cls, db: Session, document_id: str, req: FullGenerationRequest
     ) -> FullGenerationResponse:
-        document = db.query(DocumentModel).filter(DocumentModel.id == document_id).first()
+        document = (
+            db.query(DocumentModel).filter(DocumentModel.id == document_id).first()
+        )
         if not document:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Documento {document_id} no encontrado.",
             )
 
-        if req.expected_document_version is not None and document.version != req.expected_document_version:
+        if (
+            req.expected_document_version is not None
+            and document.version != req.expected_document_version
+        ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Conflicto de versión. Esperada: {req.expected_document_version}, actual: {document.version}",
@@ -342,9 +353,7 @@ class AIGenerationService:
         return headings or ["Contenido Principal"]
 
     @classmethod
-    def _extract_section_nodes(
-        cls, doc_content: Any, section_title: str
-    ) -> list[Node]:
+    def _extract_section_nodes(cls, doc_content: Any, section_title: str) -> list[Node]:
         """Extrae los nodos de contenido pertenecientes a la sección indicada."""
         if not isinstance(doc_content, dict) or "content" not in doc_content:
             return []

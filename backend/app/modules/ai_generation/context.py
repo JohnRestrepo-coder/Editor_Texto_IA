@@ -69,7 +69,9 @@ class ContextManager:
                         current_sec_texts.append(text)
 
             if summaries:
-                context["preceding_summary"] = "\n".join(summaries[-3:])  # Últimas 3 secciones previas
+                context["preceding_summary"] = "\n".join(
+                    summaries[-3:]
+                )  # Últimas 3 secciones previas
 
         return context
 
@@ -80,5 +82,11 @@ class ContextManager:
 
         content = node.get("content")
         if isinstance(content, list):
-            return " ".join([cls._extract_text(child) for child in content if isinstance(child, dict)])
+            return " ".join(
+                [
+                    cls._extract_text(child)
+                    for child in content
+                    if isinstance(child, dict)
+                ]
+            )
         return ""

@@ -32,7 +32,9 @@ class SectionGenerationRequest(BaseModel):
 
 class AcceptGenerationRequest(BaseModel):
     expected_document_version: int | None = Field(
-        default=None, ge=1, description="Versión esperada del documento para prevenir conflictos"
+        default=None,
+        ge=1,
+        description="Versión esperada del documento para prevenir conflictos",
     )
 
 

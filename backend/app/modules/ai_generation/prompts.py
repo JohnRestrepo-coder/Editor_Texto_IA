@@ -94,4 +94,6 @@ class PromptManager:
             end = text.rfind("}")
             if start != -1 and end != -1 and end > start:
                 return json.loads(text[start : end + 1])
-            raise ValueError(f"No fue posible parsear un JSON válido de la respuesta: {raw_text[:200]}")
+            raise ValueError(
+                f"No fue posible parsear un JSON válido de la respuesta: {raw_text[:200]}"
+            )

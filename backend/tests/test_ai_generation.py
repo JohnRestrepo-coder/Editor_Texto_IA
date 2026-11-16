@@ -104,7 +104,9 @@ def test_generate_and_accept_proposal_lifecycle(db_session):
                     ),
                     Node(
                         type="paragraph",
-                        content=[Node(type="text", text="Texto original de introducción.")],
+                        content=[
+                            Node(type="text", text="Texto original de introducción.")
+                        ],
                     ),
                     Node(
                         type="heading",
@@ -113,7 +115,9 @@ def test_generate_and_accept_proposal_lifecycle(db_session):
                     ),
                     Node(
                         type="paragraph",
-                        content=[Node(type="text", text="Texto original de conclusiones.")],
+                        content=[
+                            Node(type="text", text="Texto original de conclusiones.")
+                        ],
                     ),
                 ],
             ),

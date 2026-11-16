@@ -147,9 +147,7 @@ class GeminiLLMProvider(LLMProvider):
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
 
         payload = {
-            "system_instruction": {
-                "parts": [{"text": request.system_instruction}]
-            },
+            "system_instruction": {"parts": [{"text": request.system_instruction}]},
             "contents": [
                 {
                     "role": "user",
@@ -175,7 +173,9 @@ class GeminiLLMProvider(LLMProvider):
             if not candidates:
                 raise ValueError("La API de Gemini no devolvió candidatos válidos.")
 
-            raw_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            raw_text = (
+                candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            )
             parsed_json = PromptManager.parse_llm_json(raw_text)
 
             usage = data.get("usageMetadata", {})
