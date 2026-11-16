@@ -92,4 +92,17 @@ test.describe('Feature 001 & 002: Editor Documental y Gestión de Plantillas E2E
     await expect(page.locator('button:has-text("Aceptar")')).toBeVisible();
     await expect(page.locator('button:has-text("Rechazar")')).toBeVisible();
   });
+
+  test('debe mostrar botones de exportación DOCX y PDF en la cabecera', async ({ page }) => {
+    await page.goto('/');
+
+    // Verificar que los botones de exportación estén visibles y habilitados
+    const btnDocx = page.locator('button[title*="Word (.docx)"]');
+    const btnPdf = page.locator('button[title*="PDF"]');
+    const btnPreview = page.locator('a[title*="Vista preliminar"]');
+
+    await expect(btnDocx).toBeVisible();
+    await expect(btnPdf).toBeVisible();
+    await expect(btnPreview).toBeVisible();
+  });
 });

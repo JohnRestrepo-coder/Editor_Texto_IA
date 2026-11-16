@@ -186,4 +186,67 @@ export const api = {
     if (!res.ok) throw new Error('Error al consultar historial de propuestas');
     return res.json();
   },
+
+  // Exportación Documental (Feature 004)
+  async exportDocx(
+    documentId: string
+  ): Promise<{ blob: Blob; filename: string; warnings: string[] }> {
+    const res = await fetch(`${API_BASE}/exports/docx?document_id=${documentId}`, {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al exportar DOCX');
+    }
+
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match ? match[1] : 'documento.docx';
+
+    const rawWarnings = res.headers.get('X-Unsupported-Elements');
+    let warnings: string[] = [];
+    if (rawWarnings) {
+      try {
+        warnings = JSON.parse(rawWarnings);
+      } catch {
+        // Ignorar error de parsing
+      }
+    }
+
+    const blob = await res.blob();
+    return { blob, filename, warnings };
+  },
+
+  async exportPdf(
+    documentId: string
+  ): Promise<{ blob: Blob; filename: string; warnings: string[] }> {
+    const res = await fetch(`${API_BASE}/exports/pdf?document_id=${documentId}`, {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al exportar PDF');
+    }
+
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match ? match[1] : 'documento.pdf';
+
+    const rawWarnings = res.headers.get('X-Unsupported-Elements');
+    let warnings: string[] = [];
+    if (rawWarnings) {
+      try {
+        warnings = JSON.parse(rawWarnings);
+      } catch {
+        // Ignorar error de parsing
+      }
+    }
+
+    const blob = await res.blob();
+    return { blob, filename, warnings };
+  },
+
+  async getPreviewUrl(documentId: string): Promise<string> {
+    return `${API_BASE}/exports/${documentId}/preview`;
+  },
 };

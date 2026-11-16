@@ -46,6 +46,8 @@ frontend/dist-ssr/
 .env
 .env.*
 !.env.example
+*.docx
+!storage/
 
 # Local databases & storage
 *.db

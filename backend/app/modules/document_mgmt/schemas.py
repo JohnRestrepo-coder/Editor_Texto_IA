@@ -26,6 +26,7 @@ NodeType = Literal[
     "table",
     "tableRow",
     "tableCell",
+    "tableHeader",
     "text",
     "hardBreak",
     "image",
