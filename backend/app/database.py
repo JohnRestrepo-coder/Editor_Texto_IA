@@ -25,6 +25,7 @@ def get_db_session():
 
 def init_db():
     # Import models to ensure they are registered with Base.metadata
-    import backend.app.modules.document_mgmt.models  # noqa
+    import backend.app.modules.document_mgmt.models
+    import backend.app.modules.template_mgmt.models  # noqa
 
     Base.metadata.create_all(bind=engine)

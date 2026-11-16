@@ -1,12 +1,13 @@
 import React from 'react';
 import type { DocumentListItem } from '../types/document';
-import { FileText, Plus, Trash2, Clock } from 'lucide-react';
+import { FileText, Plus, Trash2, Clock, Layers } from 'lucide-react';
 
 interface SidebarProps {
   documents: DocumentListItem[];
   currentDocId?: string;
   onSelectDoc: (id: string) => void;
   onCreateNew: () => void;
+  onOpenTemplateModal: () => void;
   onDeleteDoc: (id: string) => void;
 }
 
@@ -15,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentDocId,
   onSelectDoc,
   onCreateNew,
+  onOpenTemplateModal,
   onDeleteDoc,
 }) => {
   return (
@@ -26,13 +28,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <div className="p-3">
+      <div className="p-3 space-y-2">
         <button
           onClick={onCreateNew}
-          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-md shadow transition-colors text-sm"
+          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 px-3 rounded-md shadow-xs transition-colors text-xs"
         >
-          <Plus size={18} />
-          <span>Nuevo Documento</span>
+          <Plus size={16} />
+          <span>Editor Libre</span>
+        </button>
+
+        <button
+          onClick={onOpenTemplateModal}
+          className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium py-2 px-3 rounded-md transition-colors text-xs"
+        >
+          <Layers size={16} className="text-blue-400" />
+          <span>Usar Plantilla / DOCX</span>
         </button>
       </div>
 
@@ -59,11 +69,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <div className="flex flex-col truncate pr-2">
-                  <span className="font-medium truncate">{doc.title}</span>
-                  <span className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                    <Clock size={11} />
-                    v{doc.version} · {new Date(doc.updated_at).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="font-medium truncate">{doc.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                    <span className="flex items-center gap-1">
+                      <Clock size={11} />
+                      v{doc.version}
+                    </span>
+                    {doc.template_id && (
+                      <span className="bg-slate-800 text-blue-300 px-1.5 py-0.2 rounded text-[10px]">
+                        Plantilla
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -85,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="p-3 border-t border-slate-800 text-xs text-slate-400 text-center">
-        AI Document Studio v0.1.0 · Monousuario
+        AI Document Studio v0.2.0 · Fase 2
       </div>
     </aside>
   );
