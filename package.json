@@ -6,7 +6,7 @@
   "scripts": {
     "dev:frontend": "npm --prefix frontend run dev",
     "build:frontend": "npm --prefix frontend run build",
-    "dev:backend": "uvicorn backend.app.main:app --reload --port 8000",
+    "dev:backend": ".\\.venv\\Scripts\\uvicorn backend.app.main:app --reload --port 8000",
     "lint:backend": ".\\.venv\\Scripts\\ruff check backend && .\\.venv\\Scripts\\ruff format --check backend",
     "format:backend": ".\\.venv\\Scripts\\ruff format backend",
     "test:backend": ".\\.venv\\Scripts\\pytest -v backend/tests",
