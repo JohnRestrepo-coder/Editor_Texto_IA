@@ -1,6 +1,7 @@
+import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 from pydantic import BaseModel, Field
@@ -8,12 +9,14 @@ from pydantic import BaseModel, Field
 from backend.app.config import settings
 from backend.app.modules.ai_generation.prompts import PromptManager
 
+logger = logging.getLogger(__name__)
+
 
 class LLMRequest(BaseModel):
     prompt: str
     system_instruction: str = ""
     context: dict[str, Any] = Field(default_factory=dict)
-    max_tokens: int = 1500
+    max_tokens: int = 2000
     temperature: float = 0.7
 
 
@@ -22,7 +25,7 @@ class LLMResponse(BaseModel):
     raw_text: str
     model: str
     provider: str
-    prompt_version: str = "v1"
+    prompt_version: str = "v2"
     latency_ms: int = 0
     tokens_used: int | None = None
 
@@ -53,7 +56,7 @@ class MockLLMProvider(LLMProvider):
                     "content": [
                         {
                             "type": "text",
-                            "text": f"Este es el contenido generado asistido por IA para la sección '{section_title}'. Se han considerado las directrices y el tono del documento.",
+                            "text": f"Contenido generado para la sección '{section_title}'. Se han considerado las directrices y el tono del documento.",
                         }
                     ],
                 },
@@ -118,7 +121,7 @@ class MockLLMProvider(LLMProvider):
             raw_text="mock_generated_json",
             model="mock-v1",
             provider="mock",
-            prompt_version="v1",
+            prompt_version="v2",
             latency_ms=max(1, latency_ms),
             tokens_used=180,
         )
@@ -127,27 +130,37 @@ class MockLLMProvider(LLMProvider):
 class GeminiLLMProvider(LLMProvider):
     """
     Adaptador para Google Gemini API utilizando llamadas HTTP estándar y salida estructurada JSON.
-    Si la API key no está configurada, recurre transparentemente al proveedor simulado.
+    Usa autenticación por encabezado x-goog-api-key y soporte para modelos modernos.
     """
+
+    CANDIDATE_MODELS: ClassVar[list[str]] = [
+        "gemini-3.5-flash-lite",
+        "gemini-2.5-flash",
+        "gemini-1.5-flash",
+    ]
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key or settings.GEMINI_API_KEY
-        self.model = model or settings.GEMINI_MODEL or "gemini-1.5-flash"
+        self.model = model or settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
         self.mock_fallback = MockLLMProvider()
 
     def generate(self, request: LLMRequest) -> LLMResponse:
         if not self.api_key:
-            # Fallback seguro para entorno de desarrollo / sin costo
+            logger.warning(
+                "GEMINI_API_KEY no configurada. Utilizando MockLLMProvider para pruebas locales."
+            )
             response = self.mock_fallback.generate(request)
-            response.provider = "gemini-mock-fallback"
+            response.provider = "mock-no-api-key"
             response.model = self.model
             return response
 
         start_time = time.time()
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": self.api_key,
+        }
 
-        payload = {
-            "system_instruction": {"parts": [{"text": request.system_instruction}]},
+        payload: dict[str, Any] = {
             "contents": [
                 {
                     "role": "user",
@@ -155,47 +168,78 @@ class GeminiLLMProvider(LLMProvider):
                 }
             ],
             "generationConfig": {
-                "response_mime_type": "application/json",
                 "temperature": request.temperature,
                 "max_output_tokens": request.max_tokens,
             },
         }
 
-        try:
-            with httpx.Client(timeout=30.0) as client:
-                res = client.post(url, json=payload)
-                res.raise_for_status()
-                data = res.json()
+        if request.system_instruction:
+            payload["system_instruction"] = {
+                "parts": [{"text": request.system_instruction}]
+            }
 
-            latency_ms = int((time.time() - start_time) * 1000)
+        models_to_try = [self.model] + [
+            m for m in self.CANDIDATE_MODELS if m != self.model
+        ]
+        last_error: Exception | None = None
 
-            candidates = data.get("candidates", [])
-            if not candidates:
-                raise ValueError("La API de Gemini no devolvió candidatos válidos.")
+        for target_model in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent"
+            try:
+                with httpx.Client(timeout=45.0) as client:
+                    res = client.post(url, headers=headers, json=payload)
 
-            raw_text = (
-                candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            )
-            parsed_json = PromptManager.parse_llm_json(raw_text)
+                    if res.status_code == 404:
+                        logger.warning(
+                            f"Modelo '{target_model}' no disponible (404). Intentando siguiente modelo..."
+                        )
+                        continue
 
-            usage = data.get("usageMetadata", {})
-            tokens_used = usage.get("totalTokenCount", 0)
+                    if res.status_code != 200:
+                        raise RuntimeError(
+                            f"Error de la API de Google Gemini (HTTP {res.status_code}): {res.text[:300]}"
+                        )
 
-            return LLMResponse(
-                content_json=parsed_json,
-                raw_text=raw_text,
-                model=self.model,
-                provider="gemini",
-                prompt_version="v1",
-                latency_ms=latency_ms,
-                tokens_used=tokens_used,
-            )
-        except (httpx.HTTPError, ValueError, KeyError):
-            # En caso de error de red o cuota en desarrollo, retornar fallback con metadatos de error
-            fallback = self.mock_fallback.generate(request)
-            fallback.provider = "gemini-error-fallback"
-            fallback.model = self.model
-            return fallback
+                    data = res.json()
+
+                latency_ms = int((time.time() - start_time) * 1000)
+                candidates = data.get("candidates", [])
+                if not candidates:
+                    raise ValueError(
+                        "La API de Gemini no devolvió candidatos válidos en la respuesta."
+                    )
+
+                parts = candidates[0].get("content", {}).get("parts", [])
+                raw_text = parts[0].get("text", "") if parts else ""
+                parsed_json = PromptManager.parse_llm_json(raw_text)
+
+                usage = data.get("usageMetadata", {})
+                tokens_used = usage.get("totalTokenCount", 0)
+
+                return LLMResponse(
+                    content_json=parsed_json,
+                    raw_text=raw_text,
+                    model=target_model,
+                    provider="gemini",
+                    prompt_version="v2",
+                    latency_ms=latency_ms,
+                    tokens_used=tokens_used,
+                )
+
+            except (
+                httpx.HTTPError,
+                ValueError,
+                KeyError,
+                RuntimeError,
+                TimeoutError,
+            ) as e:
+                logger.error(f"Fallo al invocar modelo '{target_model}': {e!s}")
+                last_error = e
+
+        # Si llegamos aquí con api_key configurada, propagamos el error real para no fingir respuestas
+        raise RuntimeError(
+            f"No fue posible generar contenido con Google Gemini: {last_error}"
+        )
 
 
 def get_llm_provider() -> LLMProvider:

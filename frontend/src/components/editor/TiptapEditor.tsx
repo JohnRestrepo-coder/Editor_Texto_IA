@@ -8,6 +8,7 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import Link from '@tiptap/extension-link';
 import { EditorToolbar } from './EditorToolbar';
+import { AiBlock } from './extensions/AiBlockNode';
 import type { DocumentContent } from '../../types/document';
 
 interface TiptapEditorProps {
@@ -36,6 +37,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       Link.configure({
         openOnClick: false,
       }),
+      AiBlock,
     ],
     content: initialContent as any,
     onUpdate: ({ editor }) => {
@@ -59,6 +61,52 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       }
     }
   }, [documentId, editor]);
+
+  // Manejador para reemplazar el bloque de IA con el contenido generado
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleReplaceBlock = (e: Event) => {
+      const customEvent = e as CustomEvent<{
+        blockId: string;
+        content: DocumentContent | any;
+      }>;
+      const { blockId, content } = customEvent.detail;
+      if (!blockId || !content) return;
+
+      let targetPos = -1;
+      let targetSize = 0;
+
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'aiBlock' && node.attrs.id === blockId) {
+          targetPos = pos;
+          targetSize = node.nodeSize;
+          return false;
+        }
+      });
+
+      if (targetPos !== -1) {
+        const nodesToInsert = content.content || [
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: typeof content === 'string' ? content : '' }],
+          },
+        ];
+
+        editor
+          .chain()
+          .focus()
+          .deleteRange({ from: targetPos, to: targetPos + targetSize })
+          .insertContentAt(targetPos, nodesToInsert)
+          .run();
+      }
+    };
+
+    window.addEventListener('replace-ai-block', handleReplaceBlock);
+    return () => {
+      window.removeEventListener('replace-ai-block', handleReplaceBlock);
+    };
+  }, [editor]);
 
   return (
     <div className="flex flex-col h-full bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">

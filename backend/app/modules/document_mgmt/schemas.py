@@ -30,6 +30,7 @@ NodeType = Literal[
     "text",
     "hardBreak",
     "image",
+    "aiBlock",
 ]
 
 

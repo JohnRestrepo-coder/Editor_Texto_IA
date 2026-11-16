@@ -6,6 +6,7 @@ from backend.app.database import init_db
 from backend.app.modules.ai_generation.router import router as generation_router
 from backend.app.modules.document_mgmt.router import router as document_router
 from backend.app.modules.export_engine.router import router as export_router
+from backend.app.modules.source_mgmt.router import router as source_router
 from backend.app.modules.template_mgmt.router import router as template_router
 
 # Inicialización directa de la base de datos
@@ -30,6 +31,7 @@ app.add_middleware(
 app.include_router(document_router, prefix=settings.API_V1_PREFIX)
 app.include_router(template_router, prefix=settings.API_V1_PREFIX)
 app.include_router(generation_router, prefix=settings.API_V1_PREFIX)
+app.include_router(source_router, prefix=settings.API_V1_PREFIX)
 app.include_router(export_router, prefix=settings.API_V1_PREFIX)
 
 

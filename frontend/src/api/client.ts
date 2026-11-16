@@ -189,10 +189,17 @@ export const api = {
 
   // Exportación Documental (Feature 004)
   async exportDocx(
-    documentId: string
+    documentId: string,
+    payload?: { title?: string; content?: any }
   ): Promise<{ blob: Blob; filename: string; warnings: string[] }> {
-    const res = await fetch(`${API_BASE}/exports/docx?document_id=${documentId}`, {
+    const res = await fetch(`${API_BASE}/exports/docx`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        document_id: documentId,
+        title: payload?.title,
+        content: payload?.content,
+      }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -218,10 +225,17 @@ export const api = {
   },
 
   async exportPdf(
-    documentId: string
+    documentId: string,
+    payload?: { title?: string; content?: any }
   ): Promise<{ blob: Blob; filename: string; warnings: string[] }> {
-    const res = await fetch(`${API_BASE}/exports/pdf?document_id=${documentId}`, {
+    const res = await fetch(`${API_BASE}/exports/pdf`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        document_id: documentId,
+        title: payload?.title,
+        content: payload?.content,
+      }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -248,5 +262,57 @@ export const api = {
 
   async getPreviewUrl(documentId: string): Promise<string> {
     return `${API_BASE}/exports/${documentId}/preview`;
+  },
+
+  // Gestión de Fuentes y Extracción (Fase 2 & 3)
+  async extractSource(file: File): Promise<{
+    filename: string;
+    file_type: string;
+    char_count: number;
+    extracted_text: string;
+    success: boolean;
+    error: string | null;
+  }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/sources/extract`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al procesar archivo');
+    }
+    return res.json();
+  },
+
+  // Generación Directa por Bloque (Fase 2)
+  async generateBlock(payload: {
+    document_id: string;
+    block_id: string;
+    section_title?: string;
+    user_instructions: string;
+    mode?: string;
+    sources_text?: string;
+    existing_text?: string;
+  }): Promise<{
+    block_id: string;
+    status: string;
+    content: any;
+    raw_text: string;
+    provider: string;
+    model: string;
+    error_message?: string | null;
+  }> {
+    const res = await fetch(`${API_BASE}/generations/block`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al generar contenido del bloque');
+    }
+    return res.json();
   },
 };

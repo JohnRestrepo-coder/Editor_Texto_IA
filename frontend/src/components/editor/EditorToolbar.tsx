@@ -13,7 +13,8 @@ import {
   Table as TableIcon,
   Undo2,
   Redo2,
-  Minus
+  Minus,
+  Sparkles,
 } from 'lucide-react';
 
 interface EditorToolbarProps {
@@ -30,6 +31,35 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor }) => {
 
   const insertTable = () => {
     editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+  };
+
+  const insertAiBlock = () => {
+    const newId = `block-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'aiBlock',
+        attrs: {
+          id: newId,
+          sectionTitle: 'Nueva Sección con IA',
+          instructions: '',
+          mode: 'draft',
+          status: 'pending',
+        },
+      })
+      .run();
+
+    window.dispatchEvent(
+      new CustomEvent('ai-block-selected', {
+        detail: {
+          blockId: newId,
+          sectionTitle: 'Nueva Sección con IA',
+          instructions: '',
+          mode: 'draft',
+        },
+      })
+    );
   };
 
   return (
@@ -161,6 +191,19 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor }) => {
         title="Rehacer (Ctrl+Y)"
       >
         <Redo2 size={16} />
+      </button>
+
+      <div className="h-4 w-[1px] bg-slate-300 mx-1" />
+
+      {/* Botón Insertar Bloque de IA (Fase 2.1) */}
+      <button
+        type="button"
+        onClick={insertAiBlock}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs shadow-xs transition-all cursor-pointer"
+        title="Insertar bloque de generación asistida por IA en la posición del cursor"
+      >
+        <Sparkles size={14} className="text-yellow-300" />
+        <span>+ Bloque IA</span>
       </button>
     </div>
   );

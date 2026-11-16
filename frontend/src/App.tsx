@@ -5,7 +5,8 @@ import { Sidebar } from './components/Sidebar';
 import { TiptapEditor } from './components/editor/TiptapEditor';
 import { TemplateModal } from './components/TemplateModal';
 import { AIAssistantDrawer } from './components/AIAssistantDrawer';
-import { Save, CheckCircle2, AlertCircle, Loader2, Bookmark, Sparkles, Download, Eye } from 'lucide-react';
+import { AIGenerationPanel } from './components/AIGenerationPanel';
+import { Save, CheckCircle2, AlertCircle, Loader2, Bookmark, Sparkles, Download, Eye, Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
@@ -18,8 +19,35 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
+  const [activeAiBlock, setActiveAiBlock] = useState<{
+    blockId: string;
+    sectionTitle: string;
+    instructions: string;
+    mode: string;
+  } | null>(null);
+  const [isAIGenerationOpen, setIsAIGenerationOpen] = useState(false);
   const [isExporting, setIsExporting] = useState<'docx' | 'pdf' | null>(null);
   const [exportWarnings, setExportWarnings] = useState<string[]>([]);
+
+  // Escuchar selección de bloque de IA para abrir panel de generación
+  useEffect(() => {
+    const handleBlockSelected = (e: Event) => {
+      const customEvent = e as CustomEvent<{
+        blockId: string;
+        sectionTitle: string;
+        instructions: string;
+        mode: string;
+      }>;
+      setActiveAiBlock(customEvent.detail);
+      setIsAIGenerationOpen(true);
+      setIsAIAssistantOpen(false);
+    };
+
+    window.addEventListener('ai-block-selected', handleBlockSelected);
+    return () => {
+      window.removeEventListener('ai-block-selected', handleBlockSelected);
+    };
+  }, []);
 
   // Cargar lista de documentos
   const loadDocuments = useCallback(async () => {
@@ -141,7 +169,14 @@ export const App: React.FC = () => {
     setIsExporting('docx');
     setExportWarnings([]);
     try {
-      const { blob, filename, warnings } = await api.exportDocx(currentDoc.id);
+      // Guardar cambios automáticamente si hay modificaciones
+      if (content) {
+        handleSave();
+      }
+      const { blob, filename, warnings } = await api.exportDocx(currentDoc.id, {
+        title,
+        content: content || undefined,
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -166,7 +201,14 @@ export const App: React.FC = () => {
     setIsExporting('pdf');
     setExportWarnings([]);
     try {
-      const { blob, filename, warnings } = await api.exportPdf(currentDoc.id);
+      // Guardar cambios automáticamente si hay modificaciones
+      if (content) {
+        handleSave();
+      }
+      const { blob, filename, warnings } = await api.exportPdf(currentDoc.id, {
+        title,
+        content: content || undefined,
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -257,16 +299,37 @@ export const App: React.FC = () => {
             )}
 
             <button
-              onClick={() => setIsAIAssistantOpen((prev) => !prev)}
+              onClick={() => {
+                setIsAIGenerationOpen((prev) => !prev);
+                setIsAIAssistantOpen(false);
+              }}
               disabled={!currentDoc}
               className={`flex items-center gap-1.5 font-medium px-3 py-2 rounded-md transition-colors text-sm cursor-pointer border ${
-                isAIAssistantOpen
+                isAIGenerationOpen
                   ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
                   : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
               }`}
+              title="Panel lateral de generación por bloques con IA"
             >
               <Sparkles size={16} />
-              <span>Asistente IA</span>
+              <span>Generar con IA</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setIsAIAssistantOpen((prev) => !prev);
+                setIsAIGenerationOpen(false);
+              }}
+              disabled={!currentDoc}
+              className={`flex items-center gap-1.5 font-medium px-3 py-2 rounded-md transition-colors text-sm cursor-pointer border ${
+                isAIAssistantOpen
+                  ? 'bg-slate-700 text-white border-slate-800 shadow-sm'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              }`}
+              title="Asistente general de documento"
+            >
+              <Layers size={15} />
+              <span>Secciones</span>
             </button>
 
             <button
@@ -357,12 +420,25 @@ export const App: React.FC = () => {
         onDocumentCreated={handleDocumentCreatedFromTemplate}
       />
 
-      {/* Panel Lateral de Asistente IA */}
+      {/* Panel Lateral de Asistente Clásico por Secciones */}
       <AIAssistantDrawer
         document={currentDoc}
         isOpen={isAIAssistantOpen}
         onClose={() => setIsAIAssistantOpen(false)}
         onDocumentUpdated={handleDocumentUpdated}
+      />
+
+      {/* Panel Lateral de Generación por Bloques con IA (Fase 2) */}
+      <AIGenerationPanel
+        document={currentDoc}
+        isOpen={isAIGenerationOpen}
+        onClose={() => setIsAIGenerationOpen(false)}
+        activeBlock={activeAiBlock}
+        onBlockInserted={() => {
+          setTimeout(() => {
+            handleSave();
+          }, 300);
+        }}
       />
     </div>
   );

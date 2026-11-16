@@ -14,6 +14,7 @@ ALLOWED_NODE_TYPES = {
     "tableRow",
     "tableCell",
     "tableHeader",
+    "aiBlock",
 }
 
 ALLOWED_MARKS = {"bold", "italic", "underline"}

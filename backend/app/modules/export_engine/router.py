@@ -42,7 +42,12 @@ def export_docx(
             detail="Se requiere document_id en el cuerpo o como parámetro de consulta.",
         )
 
-    file_bytes, filename, unsupported = ExportService.export_docx(db, target_id)
+    override_title = body.title if body else None
+    override_content = body.content if body else None
+
+    file_bytes, filename, unsupported = ExportService.export_docx(
+        db, target_id, override_title=override_title, override_content=override_content
+    )
 
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',
@@ -82,7 +87,12 @@ def export_pdf(
             detail="Se requiere document_id en el cuerpo o como parámetro de consulta.",
         )
 
-    file_bytes, filename, unsupported = ExportService.export_pdf(db, target_id)
+    override_title = body.title if body else None
+    override_content = body.content if body else None
+
+    file_bytes, filename, unsupported = ExportService.export_pdf(
+        db, target_id, override_title=override_title, override_content=override_content
+    )
 
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',

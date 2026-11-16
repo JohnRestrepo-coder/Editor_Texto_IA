@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     LLM_PROVIDER: str = "gemini"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"

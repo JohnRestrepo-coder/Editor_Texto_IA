@@ -164,6 +164,16 @@ class HtmlRenderer:
             elif node_type == "table":
                 parts.append(cls._render_table(node, tracker))
 
+            elif node_type == "aiBlock":
+                attrs = node.get("attrs", {})
+                title = html.escape(str(attrs.get("sectionTitle") or "Bloque de IA"))
+                instructions = html.escape(str(attrs.get("instructions") or ""))
+                desc = f": {instructions}" if instructions else ""
+                parts.append(
+                    f'<div style="border: 2px dashed #6366f1; background-color: #f5f3ff; color: #4338ca; padding: 10px 16px; margin: 16px 0; border-radius: 6px; font-size: 10pt;">'
+                    f"<strong>🤖 {title}</strong>{desc}</div>"
+                )
+
         return "\n".join(parts)
 
     @classmethod

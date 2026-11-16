@@ -318,3 +318,56 @@ def test_html_preview_render(db_session):
     assert "Vista Previa Documento" in html_result
     assert "<h2>Sección Vista Previa</h2>" in html_result
     assert "<strong>negrita</strong>" in html_result
+
+
+def test_export_docx_with_override_content_and_ai_block(db_session):
+    # Crear documento inicialmente vacío en base de datos
+    doc = DocumentService.create_document(
+        db_session,
+        DocumentCreate(title="Documento Inicial Vacio"),
+    )
+
+    # Simular contenido editado en el frontend con párrafos y un bloque de IA
+    in_memory_content = {
+        "type": "doc",
+        "content": [
+            {
+                "type": "paragraph",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Párrafo 1 escrito por el usuario en el editor.",
+                    }
+                ],
+            },
+            {
+                "type": "aiBlock",
+                "attrs": {
+                    "id": "block-1",
+                    "sectionTitle": "Análisis Financiero",
+                    "instructions": "Proyección Q3",
+                },
+            },
+            {
+                "type": "paragraph",
+                "content": [
+                    {"type": "text", "text": "Párrafo posterior al bloque de IA."}
+                ],
+            },
+        ],
+    }
+
+    docx_bytes, _filename, _warnings = ExportService.export_docx(
+        db_session,
+        doc.id,
+        override_title="Documento_Con_Contenido_Real",
+        override_content=in_memory_content,
+    )
+
+    reader = DocxReader(io.BytesIO(docx_bytes))
+    all_text = " ".join([p.text for p in reader.paragraphs])
+
+    assert "Documento_Con_Contenido_Real" in all_text
+    assert "Párrafo 1 escrito por el usuario en el editor." in all_text
+    assert "Análisis Financiero" in all_text
+    assert "Párrafo posterior al bloque de IA." in all_text

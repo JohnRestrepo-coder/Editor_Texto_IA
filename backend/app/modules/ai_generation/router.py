@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from backend.app.database import get_db_session
 from backend.app.modules.ai_generation.schemas import (
     AcceptGenerationRequest,
+    BlockGenerationRequest,
+    BlockGenerationResponse,
     FullGenerationRequest,
     FullGenerationResponse,
     GenerationResponse,
@@ -17,6 +19,19 @@ from backend.app.modules.document_mgmt.schemas import DocumentResponse
 router = APIRouter(prefix="/generations", tags=["AI Generation"])
 
 DbSession = Annotated[Session, Depends(get_db_session)]
+
+
+@router.post(
+    "/block",
+    response_model=BlockGenerationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generar contenido estructurado para un bloque específico de IA",
+)
+def generate_block(
+    req: BlockGenerationRequest,
+    db: DbSession,
+):
+    return AIGenerationService.generate_block(db, req)
 
 
 @router.post(

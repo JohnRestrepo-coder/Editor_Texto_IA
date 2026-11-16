@@ -64,3 +64,36 @@ class FullGenerationResponse(BaseModel):
     total_sections: int
     generations: list[GenerationResponse]
     status: str
+
+
+class BlockGenerationRequest(BaseModel):
+    document_id: str = Field(..., description="ID del documento objetivo")
+    block_id: str = Field(..., description="ID del bloque en el editor")
+    section_title: str | None = Field(
+        default=None, description="Título o encabezado de la sección"
+    )
+    user_instructions: str = Field(
+        default="", description="Instrucciones específicas del usuario"
+    )
+    mode: str = Field(
+        default="draft",
+        description="Propósito: draft (redacción), review (corrección), summary (resumen), expand (ampliación), analyze (análisis)",
+    )
+    sources_text: str | None = Field(
+        default=None, description="Texto extraído de los archivos de fuentes adjuntos"
+    )
+    existing_text: str | None = Field(
+        default=None, description="Texto contextual existente en la sección o documento"
+    )
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class BlockGenerationResponse(BaseModel):
+    block_id: str
+    status: str
+    content: dict[str, Any] | None = None
+    raw_text: str = ""
+    provider: str = ""
+    model: str = ""
+    error_message: str | None = None

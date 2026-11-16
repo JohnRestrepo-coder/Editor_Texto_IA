@@ -85,6 +85,20 @@ class NativeDocxExporter:
         elif node_type == "table":
             cls._render_table(docx, node, tracker)
 
+        elif node_type == "aiBlock":
+            attrs = node.get("attrs", {})
+            title = attrs.get("sectionTitle") or "Bloque de IA"
+            instructions = attrs.get("instructions") or ""
+            p = docx.add_paragraph()
+            p.paragraph_format.left_indent = Inches(0.25)
+            run = p.add_run(
+                f"[🤖 {title}"
+                + (f" — Instrucción: {instructions}" if instructions else "")
+                + "]"
+            )
+            run.italic = True
+            run.font.color.rgb = RGBColor(0x63, 0x66, 0xF1)
+
     @classmethod
     def _add_inline_runs(
         cls,

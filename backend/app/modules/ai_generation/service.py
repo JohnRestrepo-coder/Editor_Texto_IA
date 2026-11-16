@@ -10,6 +10,8 @@ from backend.app.modules.ai_generation.models import GenerationModel
 from backend.app.modules.ai_generation.prompts import PromptManager
 from backend.app.modules.ai_generation.provider import LLMRequest, get_llm_provider
 from backend.app.modules.ai_generation.schemas import (
+    BlockGenerationRequest,
+    BlockGenerationResponse,
     FullGenerationRequest,
     FullGenerationResponse,
     GenerationResponse,
@@ -28,6 +30,64 @@ logger = logging.getLogger(__name__)
 
 
 class AIGenerationService:
+    @classmethod
+    def generate_block(
+        cls, db: Session, req: BlockGenerationRequest
+    ) -> BlockGenerationResponse:
+        document = (
+            db.query(DocumentModel).filter(DocumentModel.id == req.document_id).first()
+        )
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Documento {req.document_id} no encontrado.",
+            )
+
+        section_title = req.section_title or "Bloque de IA"
+        system_instruction = PromptManager.get_system_instruction()
+        user_prompt = PromptManager.build_user_prompt(
+            document_title=document.title,
+            section_title=section_title,
+            user_instructions=req.user_instructions,
+            sources_text=req.sources_text,
+            existing_text=req.existing_text,
+            mode=req.mode,
+        )
+
+        provider = get_llm_provider()
+        llm_req = LLMRequest(
+            prompt=user_prompt,
+            system_instruction=system_instruction,
+            context={
+                "section_title": section_title,
+                "mode": req.mode,
+            },
+        )
+
+        try:
+            llm_res = provider.generate(llm_req)
+            validated_doc = OutputValidator.validate_and_sanitize(llm_res.content_json)
+            return BlockGenerationResponse(
+                block_id=req.block_id,
+                status="completed",
+                content=validated_doc.model_dump(),
+                raw_text=llm_res.raw_text,
+                provider=llm_res.provider,
+                model=llm_res.model,
+                error_message=None,
+            )
+        except (ValueError, TypeError, KeyError, httpx.HTTPError, RuntimeError) as e:
+            logger.error(f"Error generando contenido de bloque: {e}")
+            return BlockGenerationResponse(
+                block_id=req.block_id,
+                status="failed",
+                content=None,
+                raw_text="",
+                provider="gemini",
+                model="unknown",
+                error_message=str(e),
+            )
+
     @classmethod
     def generate_section(
         cls, db: Session, req: SectionGenerationRequest
@@ -98,7 +158,7 @@ class AIGenerationService:
             status_val = "completed"
             error_msg = None
             proposed_content = validated_doc.model_dump()
-        except (ValueError, TypeError, KeyError, httpx.HTTPError) as e:
+        except (ValueError, TypeError, KeyError, httpx.HTTPError, RuntimeError) as e:
             logger.error(f"Error en generación con IA: {e}")
             status_val = "failed"
             error_msg = str(e)
