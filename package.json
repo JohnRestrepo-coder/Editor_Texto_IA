@@ -10,6 +10,7 @@
     "lint:backend": ".\\.venv\\Scripts\\ruff check backend",
     "format:backend": ".\\.venv\\Scripts\\ruff format backend",
     "test:backend": ".\\.venv\\Scripts\\pytest -v backend/tests",
+    "test:e2e": "npm --prefix frontend run test:e2e",
     "ci:local": "npm run build:frontend && npm run lint:backend && npm run test:backend"
   },
   "keywords": [
