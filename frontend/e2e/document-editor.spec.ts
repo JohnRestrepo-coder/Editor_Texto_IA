@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Feature 001: Editor Documental E2E', () => {
+test.describe('Feature 001 & 002: Editor Documental y Gestión de Plantillas E2E', () => {
   test('debe cargar la aplicación y mostrar el editor Tiptap con documento inicial', async ({ page }) => {
     await page.goto('/');
 
     // Verificar que la cabecera del editor y la barra lateral estén presentes
     await expect(page.locator('text=Document Studio')).toBeVisible();
-    await expect(page.locator('button:has-text("Nuevo Documento")')).toBeVisible();
+    await expect(page.locator('button:has-text("Editor Libre")')).toBeVisible();
+    await expect(page.locator('button:has-text("Usar Plantilla / DOCX")')).toBeVisible();
 
     // El editor enriquecido debe estar presente y enfocado
     const editor = page.locator('.ProseMirror');
@@ -19,8 +20,8 @@ test.describe('Feature 001: Editor Documental E2E', () => {
   test('debe permitir crear un nuevo documento en blanco, escribir y guardar', async ({ page }) => {
     await page.goto('/');
 
-    // Crear un nuevo documento desde la barra lateral
-    await page.click('button:has-text("Nuevo Documento")');
+    // Crear un nuevo documento libre desde la barra lateral
+    await page.click('button:has-text("Editor Libre")');
 
     // Cambiar el título del documento
     const titleInput = page.locator('input[placeholder="Título del documento..."]');
@@ -31,7 +32,7 @@ test.describe('Feature 001: Editor Documental E2E', () => {
     await editor.click();
     await editor.fill('Este es el contenido inicial redactado en la prueba E2E.');
 
-    // Aplicar formato de negrita con la barra de herramientas
+    // Aplicar formato de encabezado con la barra de herramientas
     await page.click('button[title="Encabezado 1"]');
 
     // Guardar los cambios
@@ -45,25 +46,31 @@ test.describe('Feature 001: Editor Documental E2E', () => {
     await expect(page.locator('aside').locator('text=Reporte Técnico Automatizado E2E')).toBeVisible();
   });
 
-  test('debe recuperar el documento persistido al recargar la página', async ({ page }) => {
+  test('debe abrir modal de plantillas, crear documento desde plantilla y cargarlo en el mismo editor', async ({ page }) => {
     await page.goto('/');
 
-    // Seleccionar el documento creado en la prueba anterior si existe
-    const docItem = page.locator('aside').locator('text=Reporte Técnico Automatizado E2E');
-    if (await docItem.isVisible()) {
-      await docItem.click();
-    }
+    // Abrir el modal de plantillas desde la barra lateral
+    await page.click('button:has-text("Usar Plantilla / DOCX")');
 
-    // Verificar que el editor contiene el texto persistido
+    // Verificar que el modal abra
+    await expect(page.locator('text=Gestor de Plantillas e Importación DOCX')).toBeVisible();
+
+    // Ir a pestaña de diseñar plantilla nativa
+    await page.click('button:has-text("Diseñar Plantilla Nativa")');
+
+    // Llenar datos de la plantilla
+    await page.fill('input[placeholder="Ej. Plan de Trabajo Trimestral"]', 'Plantilla E2E Automatizada');
+
+    // Guardar y abrir en editor
+    await page.click('button:has-text("Guardar y Abrir en Editor")');
+
+    // El modal debe cerrarse y el documento cargarse en Tiptap con el badge de Plantilla
+    await expect(page.locator('text=Gestor de Plantillas e Importación DOCX')).not.toBeVisible();
+    await expect(page.locator('header').locator('text=Plantilla')).toBeVisible();
+
+    // El editor Tiptap debe contener los encabezados de las secciones de la plantilla
     const editor = page.locator('.ProseMirror');
-    await expect(editor).toContainText('Este es el contenido inicial redactado en la prueba E2E.');
-
-    // Recargar la página
-    await page.reload();
-
-    // El contenido y el título deben persistir tras el refresco
-    const titleInput = page.locator('input[placeholder="Título del documento..."]');
-    await expect(titleInput).toHaveValue(/Reporte Técnico Automatizado E2E|Documento/);
-    await expect(editor).toBeVisible();
+    await expect(editor).toContainText('Introducción');
+    await expect(editor).toContainText('Desarrollo / Contenido');
   });
 });

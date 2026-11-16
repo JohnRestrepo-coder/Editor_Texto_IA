@@ -3,7 +3,8 @@ import { api } from './api/client';
 import type { Document, DocumentListItem, DocumentContent } from './types/document';
 import { Sidebar } from './components/Sidebar';
 import { TiptapEditor } from './components/editor/TiptapEditor';
-import { Save, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { TemplateModal } from './components/TemplateModal';
+import { Save, CheckCircle2, AlertCircle, Loader2, Bookmark } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
@@ -14,6 +15,7 @@ export const App: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
   // Cargar lista de documentos
   const loadDocuments = useCallback(async () => {
@@ -33,7 +35,7 @@ export const App: React.FC = () => {
     try {
       setIsSaving(true);
       const newDoc = await api.createDocument({
-        title: 'Documento sin título',
+        title: 'Documento Libre en Blanco',
       });
       await loadDocuments();
       setCurrentDoc(newDoc);
@@ -62,6 +64,15 @@ export const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Callback cuando se crea un documento desde plantilla
+  const handleDocumentCreatedFromTemplate = async (doc: Document) => {
+    await loadDocuments();
+    setCurrentDoc(doc);
+    setTitle(doc.title);
+    setContent(doc.content);
+    setSaveStatus('idle');
   };
 
   // Eliminar documento
@@ -119,7 +130,6 @@ export const App: React.FC = () => {
       if (docs.length > 0) {
         await handleSelectDoc(docs[0].id);
       } else {
-        // Si no hay documentos, crear uno en blanco automáticamente para arranque directo
         const newDoc = await api.createDocument({
           title: 'Documento Libre Inicial',
         });
@@ -134,19 +144,20 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans text-slate-800 antialiased overflow-hidden">
-      {/* Panel Izquierdo: Documentos */}
+      {/* Panel Izquierdo: Documentos y Plantillas */}
       <Sidebar
         documents={documents}
         currentDocId={currentDoc?.id}
         onSelectDoc={handleSelectDoc}
         onCreateNew={handleCreateNew}
+        onOpenTemplateModal={() => setIsTemplateModalOpen(true)}
         onDeleteDoc={handleDeleteDoc}
       />
 
       {/* Área Central: Cabecera y Editor */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Cabecera Superior */}
-        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm">
+        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-4 flex-1 max-w-2xl">
             <input
               type="text"
@@ -156,9 +167,16 @@ export const App: React.FC = () => {
               className="text-lg font-semibold text-slate-900 border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none px-1 py-0.5 w-full bg-transparent transition-colors"
             />
             {currentDoc && (
-              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 whitespace-nowrap">
-                v{currentDoc.version}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 whitespace-nowrap">
+                  v{currentDoc.version}
+                </span>
+                {currentDoc.template_id && (
+                  <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 whitespace-nowrap flex items-center gap-1">
+                    <Bookmark size={11} /> Plantilla
+                  </span>
+                )}
+              </div>
             )}
           </div>
 
@@ -178,7 +196,7 @@ export const App: React.FC = () => {
             <button
               onClick={handleSave}
               disabled={isSaving || !currentDoc}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-md shadow-sm transition-colors text-sm disabled:opacity-50"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-md shadow-xs transition-colors text-sm disabled:opacity-50 cursor-pointer"
             >
               {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
               <span>{isSaving ? 'Guardando...' : 'Guardar'}</span>
@@ -194,7 +212,7 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Contenedor del Editor */}
+        {/* Contenedor del Editor Tiptap */}
         <section className="flex-1 p-6 overflow-hidden">
           {loading ? (
             <div className="h-full flex items-center justify-center text-slate-400">
@@ -214,6 +232,13 @@ export const App: React.FC = () => {
           )}
         </section>
       </main>
+
+      {/* Modal de Plantillas e Importación DOCX */}
+      <TemplateModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        onDocumentCreated={handleDocumentCreatedFromTemplate}
+      />
     </div>
   );
 };
