@@ -5,7 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { TiptapEditor } from './components/editor/TiptapEditor';
 import { TemplateModal } from './components/TemplateModal';
 import { AIAssistantDrawer } from './components/AIAssistantDrawer';
-import { Save, CheckCircle2, AlertCircle, Loader2, Bookmark, Sparkles } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, Loader2, Bookmark, Sparkles, Download, Eye } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
@@ -18,6 +18,8 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState<'docx' | 'pdf' | null>(null);
+  const [exportWarnings, setExportWarnings] = useState<string[]>([]);
 
   // Cargar lista de documentos
   const loadDocuments = useCallback(async () => {
@@ -133,6 +135,56 @@ export const App: React.FC = () => {
     }
   };
 
+  // Exportar a DOCX
+  const handleExportDocx = async () => {
+    if (!currentDoc) return;
+    setIsExporting('docx');
+    setExportWarnings([]);
+    try {
+      const { blob, filename, warnings } = await api.exportDocx(currentDoc.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      if (warnings.length > 0) {
+        setExportWarnings(warnings);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error al exportar DOCX');
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  // Exportar a PDF
+  const handleExportPdf = async () => {
+    if (!currentDoc) return;
+    setIsExporting('pdf');
+    setExportWarnings([]);
+    try {
+      const { blob, filename, warnings } = await api.exportPdf(currentDoc.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      if (warnings.length > 0) {
+        setExportWarnings(warnings);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error al exportar PDF');
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
   // Inicialización al montar
   useEffect(() => {
     (async () => {
@@ -225,8 +277,49 @@ export const App: React.FC = () => {
               {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
               <span>{isSaving ? 'Guardando...' : 'Guardar'}</span>
             </button>
+
+            {/* Acciones de Exportación (Feature 004) */}
+            <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3">
+              <button
+                onClick={handleExportDocx}
+                disabled={!currentDoc || isExporting !== null}
+                className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-2 rounded-md text-xs font-semibold border border-slate-300 transition cursor-pointer disabled:opacity-50"
+                title="Descargar documento Word (.docx)"
+              >
+                {isExporting === 'docx' ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                <span>DOCX</span>
+              </button>
+              <button
+                onClick={handleExportPdf}
+                disabled={!currentDoc || isExporting !== null}
+                className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-2 rounded-md text-xs font-semibold border border-slate-300 transition cursor-pointer disabled:opacity-50"
+                title="Descargar documento PDF"
+              >
+                {isExporting === 'pdf' ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                <span>PDF</span>
+              </button>
+              <a
+                href={currentDoc ? `/api/v1/exports/${currentDoc.id}/preview` : '#'}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-md text-xs border border-slate-300 transition"
+                title="Vista preliminar de fidelidad de impresión"
+              >
+                <Eye size={14} />
+              </a>
+            </div>
           </div>
         </header>
+
+        {/* Advertencias de elementos no soportados en exportación */}
+        {exportWarnings.length > 0 && (
+          <div className="bg-amber-50 border-b border-amber-200 text-amber-800 px-6 py-2 text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span>⚠️ <strong>Aviso de Exportación:</strong> {exportWarnings.join(' · ')}</span>
+            </div>
+            <button onClick={() => setExportWarnings([])} className="underline text-amber-900 ml-4">Descartar</button>
+          </div>
+        )}
 
         {/* Mensaje de error / conflicto */}
         {errorMessage && (
