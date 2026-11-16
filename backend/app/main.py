@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.config import settings
 from backend.app.database import init_db
+from backend.app.modules.ai_generation.router import router as generation_router
 from backend.app.modules.document_mgmt.router import router as document_router
 from backend.app.modules.template_mgmt.router import router as template_router
 
@@ -27,6 +28,7 @@ app.add_middleware(
 # Routers
 app.include_router(document_router, prefix=settings.API_V1_PREFIX)
 app.include_router(template_router, prefix=settings.API_V1_PREFIX)
+app.include_router(generation_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health", tags=["System"])

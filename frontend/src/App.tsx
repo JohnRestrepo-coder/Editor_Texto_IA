@@ -4,7 +4,8 @@ import type { Document, DocumentListItem, DocumentContent } from './types/docume
 import { Sidebar } from './components/Sidebar';
 import { TiptapEditor } from './components/editor/TiptapEditor';
 import { TemplateModal } from './components/TemplateModal';
-import { Save, CheckCircle2, AlertCircle, Loader2, Bookmark } from 'lucide-react';
+import { AIAssistantDrawer } from './components/AIAssistantDrawer';
+import { Save, CheckCircle2, AlertCircle, Loader2, Bookmark, Sparkles } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
@@ -16,6 +17,7 @@ export const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
 
   // Cargar lista de documentos
   const loadDocuments = useCallback(async () => {
@@ -73,6 +75,15 @@ export const App: React.FC = () => {
     setTitle(doc.title);
     setContent(doc.content);
     setSaveStatus('idle');
+  };
+
+  // Callback cuando la IA actualiza el documento tras aceptar una propuesta
+  const handleDocumentUpdated = (doc: Document) => {
+    setCurrentDoc(doc);
+    setTitle(doc.title);
+    setContent(doc.content);
+    setSaveStatus('saved');
+    loadDocuments();
   };
 
   // Eliminar documento
@@ -194,6 +205,19 @@ export const App: React.FC = () => {
             )}
 
             <button
+              onClick={() => setIsAIAssistantOpen((prev) => !prev)}
+              disabled={!currentDoc}
+              className={`flex items-center gap-1.5 font-medium px-3 py-2 rounded-md transition-colors text-sm cursor-pointer border ${
+                isAIAssistantOpen
+                  ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+              }`}
+            >
+              <Sparkles size={16} />
+              <span>Asistente IA</span>
+            </button>
+
+            <button
               onClick={handleSave}
               disabled={isSaving || !currentDoc}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-md shadow-xs transition-colors text-sm disabled:opacity-50 cursor-pointer"
@@ -238,6 +262,14 @@ export const App: React.FC = () => {
         isOpen={isTemplateModalOpen}
         onClose={() => setIsTemplateModalOpen(false)}
         onDocumentCreated={handleDocumentCreatedFromTemplate}
+      />
+
+      {/* Panel Lateral de Asistente IA */}
+      <AIAssistantDrawer
+        document={currentDoc}
+        isOpen={isAIAssistantOpen}
+        onClose={() => setIsAIAssistantOpen(false)}
+        onDocumentUpdated={handleDocumentUpdated}
       />
     </div>
   );

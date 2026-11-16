@@ -73,4 +73,23 @@ test.describe('Feature 001 & 002: Editor Documental y Gestión de Plantillas E2E
     await expect(editor).toContainText('Introducción');
     await expect(editor).toContainText('Desarrollo / Contenido');
   });
+
+  test('debe abrir panel de Asistente IA, generar propuesta y mostrar opciones de revisión', async ({ page }) => {
+    await page.goto('/');
+
+    // Abrir el asistente de IA desde la cabecera
+    await page.click('button:has-text("Asistente IA")');
+
+    // Verificar que el panel lateral abra
+    await expect(page.locator('text=Asistente Documental')).toBeVisible();
+    await expect(page.locator('text=Sección Objetivo')).toBeVisible();
+
+    // Generar sección
+    await page.click('button:has-text("Generar Sección")');
+
+    // Debe mostrar la tarjeta de revisión con la propuesta y los botones Aceptar y Rechazar
+    await expect(page.locator('text=Propuesta:')).toBeVisible();
+    await expect(page.locator('button:has-text("Aceptar")')).toBeVisible();
+    await expect(page.locator('button:has-text("Rechazar")')).toBeVisible();
+  });
 });

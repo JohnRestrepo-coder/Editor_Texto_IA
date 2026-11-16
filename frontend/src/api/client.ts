@@ -5,6 +5,12 @@ import type {
   TemplateCreatePayload,
   DocxInspectionResult,
 } from '../types/template';
+import type {
+  SectionGenerationPayload,
+  GenerationResponse,
+  FullGenerationPayload,
+  FullGenerationResponse,
+} from '../types/generation';
 
 const API_BASE = '/api/v1';
 
@@ -121,6 +127,63 @@ export const api = {
       method: 'POST',
     });
     if (!res.ok) throw new Error('Error al instanciar documento desde plantilla');
+    return res.json();
+  },
+
+  // Generación Asistida con IA (Feature 003)
+  async generateSection(payload: SectionGenerationPayload): Promise<GenerationResponse> {
+    const res = await fetch(`${API_BASE}/generations/section`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al generar sección con IA');
+    }
+    return res.json();
+  },
+
+  async acceptGeneration(generationId: string, expectedVersion?: number): Promise<Document> {
+    const res = await fetch(`${API_BASE}/generations/${generationId}/accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expected_document_version: expectedVersion }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al aplicar propuesta');
+    }
+    return res.json();
+  },
+
+  async rejectGeneration(generationId: string): Promise<GenerationResponse> {
+    const res = await fetch(`${API_BASE}/generations/${generationId}/reject`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Error al descartar propuesta');
+    return res.json();
+  },
+
+  async generateAllSections(
+    documentId: string,
+    payload: FullGenerationPayload
+  ): Promise<FullGenerationResponse> {
+    const res = await fetch(`${API_BASE}/generations/document/${documentId}/generate-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al orquestar generación completa');
+    }
+    return res.json();
+  },
+
+  async listDocumentGenerations(documentId: string): Promise<GenerationResponse[]> {
+    const res = await fetch(`${API_BASE}/generations/document/${documentId}`);
+    if (!res.ok) throw new Error('Error al consultar historial de propuestas');
     return res.json();
   },
 };
