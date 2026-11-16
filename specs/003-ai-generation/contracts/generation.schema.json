@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-document-studio.local/schemas/generation.schema.json",
+  "title": "SectionGenerationRequest",
+  "type": "object",
+  "required": [
+    "document_id",
+    "section_id"
+  ],
+  "properties": {
+    "document_id": {
+      "type": "string"
+    },
+    "section_id": {
+      "type": "string"
+    },
+    "user_instructions": {
+      "type": "string",
+      "default": ""
+    },
+    "context": {
+      "type": "object"
+    },
+    "source_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "generation_options": {
+      "type": "object",
+      "properties": {
+        "max_words": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "preserve_existing_content": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "expected_document_version": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    }
+  },
+  "additionalProperties": false
+}

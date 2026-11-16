@@ -1,0 +1,232 @@
+AI DOCUMENT STUDIO — BRIEF MAESTRO PARA ANTIGRAVITY
+Versión inicial: 0.1.0
+Idioma del producto y documentación: español
+
+============================================================
+1. QUÉ DEBES HACER
+============================================================
+
+Actúa como equipo de ingeniería de software asistido por agentes. Tu primer trabajo NO es programar la aplicación. Tu primer trabajo es inspeccionar el repositorio, revisar este paquete, identificar contradicciones o decisiones pendientes y preparar el proyecto para implementar de forma controlada.
+
+El objetivo es construir AI Document Studio: una aplicación web para crear, editar, estructurar y exportar documentos con asistencia de inteligencia artificial.
+
+Debes trabajar de forma incremental, siguiendo las especificaciones de Spec Kit y los contratos versionados. No inventes requisitos ni tomes decisiones de producto importantes sin documentarlas y solicitar aprobación.
+
+============================================================
+2. OBJETIVO DEL PRODUCTO
+============================================================
+
+La aplicación debe permitir:
+
+- Crear un documento libre en blanco.
+- Elegir una plantilla y abrirla en el mismo editor.
+- Editar documentos con formato enriquecido.
+- Crear plantillas propias.
+- Importar archivos DOCX existentes y configurarlos como plantillas.
+- Adjuntar fuentes documentales y texto de referencia.
+- Generar contenido con IA principalmente por sección.
+- Regenerar una sección sin alterar las demás.
+- Revisar, aceptar o rechazar propuestas de IA antes de aplicarlas.
+- Guardar y recuperar documentos.
+- Exportar documentos a DOCX y PDF.
+- Registrar trazabilidad de las generaciones de IA.
+
+La plantilla representa estructura, instrucciones y estilos. El documento representa el contenido creado usando esa estructura. No construyas dos editores separados: el modo libre y el modo plantilla deben utilizar el mismo editor.
+
+============================================================
+3. DECISIONES YA CONFIRMADAS
+============================================================
+
+- Editor enriquecido: Tiptap OSS.
+- Arquitectura inicial: monolito modular; no microservicios para el PMV.
+- Plantillas Word: AMBOS escenarios:
+  A. Crear documentos DOCX desde el modelo documental.
+  B. Importar DOCX existentes y rellenarlos conservando su formato en la medida técnicamente posible.
+- Proveedores IA: integrar UN proveedor al inicio. Diseñar una interfaz/adaptador para incorporar otros proveedores después.
+- Generación: priorizar generación por sección. La generación completa será una orquestación de secciones que respeta orden y dependencias.
+- El usuario debe aprobar las modificaciones generadas por IA. No sobrescribir silenciosamente.
+- La lógica de negocio no debe depender directamente de Tiptap ni del SDK del proveedor IA.
+
+No reabras estas decisiones sin evidencia técnica concreta y una solicitud de aprobación.
+
+============================================================
+4. EXPERIENCIA DE USUARIO
+============================================================
+
+Flujo inicial:
+1. El usuario elige “Editor libre” o “Usar plantilla”.
+2. Ambos flujos abren el mismo editor.
+3. El usuario escribe, pega contenido o carga fuentes.
+4. Puede solicitar generación completa o por sección; la generación por sección es la prioridad.
+5. La IA devuelve una propuesta.
+6. El usuario revisa la propuesta y decide aceptarla o rechazarla.
+7. El usuario guarda y exporta el documento.
+
+Diseño conceptual de la interfaz:
+- Panel izquierdo: documentos, plantillas y estructura/secciones.
+- Panel central: editor Tiptap.
+- Panel derecho: asistente IA, instrucciones y fuentes/contexto.
+No asumas que esta distribución visual es definitiva; respeta la especificación de UX y valida con prototipo.
+
+============================================================
+5. ARQUITECTURA Y TECNOLOGÍAS PROPUESTAS
+============================================================
+
+Propuesta inicial, sujeta a validación en el plan técnico:
+
+- Frontend: React + TypeScript.
+- Editor: Tiptap OSS.
+- Backend: Python + FastAPI.
+- Validación: Pydantic.
+- Base de datos: PostgreSQL.
+- Persistencia/ORM: SQLAlchemy.
+- DOCX: evaluar docxtpl + python-docx para plantillas existentes y python-docx para generación inicial desde cero.
+- PDF: HTML/CSS de impresión + Playwright/Chromium.
+- Pruebas backend: Pytest.
+- Pruebas E2E: Playwright.
+- Contrato HTTP: OpenAPI.
+- Archivos: definir interfaz de almacenamiento; usar almacenamiento local solo para desarrollo si procede.
+
+No instales dependencias ni fijes versiones arbitrariamente. Inspecciona primero el entorno y documenta las versiones recomendadas y su compatibilidad. Evita servicios comerciales o extensiones Pro si existe una alternativa OSS que satisfaga el requisito.
+
+La arquitectura debe separar, como mínimo:
+- Document Management.
+- Template Management.
+- Source Management.
+- AI Generation.
+- Context Manager.
+- Prompt Manager.
+- Output Validator.
+- LLM Provider Adapter.
+- Document Export.
+
+============================================================
+6. PRINCIPIOS Y REGLAS OBLIGATORIAS
+============================================================
+
+- La especificación aprobada es la fuente de verdad.
+- Aplicar SOLID, DRY, KISS, YAGNI, alta cohesión y bajo acoplamiento.
+- Usar contratos explícitos entre módulos.
+- Mantener lógica de negocio independiente de infraestructura.
+- No introducir microservicios, colas, vector DB o frameworks de agentes sin justificación documentada.
+- No exponer secretos ni API keys en frontend.
+- Validar todos los datos de entrada y archivos.
+- Tratar el contenido de documentos y fuentes como datos no confiables; protegerse de prompt injection.
+- Validar las salidas estructuradas de IA en backend.
+- JSON válido no implica contenido correcto: incluir validaciones de negocio y aprobación humana.
+- No modificar otras secciones al regenerar una sección.
+- No reemplazar contenido original sin aprobación explícita.
+- Registrar errores y trazabilidad de las generaciones.
+- No almacenar claves API en el repositorio.
+- Añadir pruebas a la lógica nueva y a los contratos.
+- No afirmar que una función está terminada sin mostrar pruebas o evidencia.
+
+============================================================
+7. MODELO DOCUMENTAL
+============================================================
+
+El editor utilizará inicialmente el JSON de Tiptap/ProseMirror como representación de contenido enriquecido. El backend debe validar el esquema permitido y mantener el modelo detrás de una frontera/adaptador para evitar que todo el dominio dependa de APIs específicas del editor.
+
+Soportar inicialmente:
+- Párrafos y encabezados.
+- Negrita, cursiva y subrayado.
+- Listas ordenadas y no ordenadas.
+- Tablas.
+- Enlaces.
+- Imágenes, sujeto a reglas de carga/almacenamiento.
+- Alineación y estilos básicos.
+- Saltos de página si la solución técnica los soporta de forma estable.
+
+No permitas HTML arbitrario del LLM sin sanitización y validación.
+
+============================================================
+8. IA Y GENERACIÓN
+============================================================
+
+- Un proveedor real en el PMV; proveedor/modelo aún PENDIENTE.
+- Definir interfaz LLMProvider y un adaptador concreto.
+- Los prompts deben estar versionados y fuera de los endpoints y componentes de UI.
+- Las salidas deben ser estructuradas y validadas con esquemas.
+- La generación por sección recibe documento, sección, instrucciones, contexto y fuentes relevantes.
+- Contexto: global, plantilla, fuentes y contenido de secciones relacionadas.
+- Evitar enviar documentos completos innecesariamente; recuperar solo contexto pertinente.
+- La generación completa coordina las secciones respetando dependencias.
+- Registrar proveedor, modelo, versión del prompt, fecha, tokens/costo si está disponible, latencia, resultado y errores.
+- El sistema debe distinguir “propuesta generada” de “contenido aprobado y persistido”.
+
+============================================================
+9. PLANTILLAS Y EXPORTACIÓN
+============================================================
+
+Se deben soportar:
+A. Plantillas nativas definidas en la aplicación.
+B. DOCX existentes importados por el usuario.
+
+No supongas que cualquier DOCX puede transformarse automáticamente en una plantilla estructurada perfecta. Diseña un proceso de inspección, mapeo y configuración con intervención humana.
+
+Para DOCX:
+- Investigar y probar docxtpl/python-docx para rellenar plantillas existentes.
+- Evaluar python-docx para crear documentos nuevos.
+- Verificar tablas, encabezados, pies, imágenes, listas, numeración, márgenes, saltos de página y estilos.
+- Conservar el archivo original.
+- No prometer fidelidad pixel-perfect sin pruebas en Microsoft Word.
+
+Para PDF:
+- Evaluar HTML/CSS de impresión con Playwright/Chromium.
+- Probar paginación, márgenes, encabezados, pies y tablas.
+
+============================================================
+10. CÓMO DEBEN TRABAJAR LOS AGENTES
+============================================================
+
+Roles sugeridos:
+- Product/Analyst: requisitos, historias y criterios de aceptación.
+- Architect: arquitectura, contratos y decisiones técnicas.
+- Frontend: interfaz y editor.
+- Backend/AI: API, dominio, contexto, prompts y proveedor.
+- QA/Reviewer: pruebas, seguridad y conformidad con especificaciones.
+
+Reglas:
+- Primero inspeccionar el repositorio y los archivos existentes.
+- No sobrescribir trabajo existente sin entenderlo.
+- Un agente no cambia contratos compartidos sin aprobación.
+- Definir ownership de carpetas/archivos.
+- Evitar que varios agentes modifiquen simultáneamente los mismos archivos.
+- Usar ramas/PR o worktrees si el entorno lo permite.
+- Todo cambio debe relacionarse con una especificación y una tarea.
+- Al terminar, informar archivos cambiados, decisiones, pruebas ejecutadas y resultados.
+
+============================================================
+11. PRIMERA TAREA PARA ANTIGRAVITY
+============================================================
+
+Realiza SOLO una fase de preparación y análisis:
+
+1. Inspecciona el repositorio actual: archivos, dependencias, Git, estructura y configuración.
+2. No borres ni reemplaces archivos existentes.
+3. Lee el paquete Spec Kit entregado.
+4. Comprueba si Spec Kit está instalado y qué comandos soporta esta versión.
+5. Compara la estructura del paquete con la estructura real del proyecto.
+6. Identifica contradicciones, campos ambiguos y decisiones pendientes.
+7. Propón un plan de inicialización e integración con Spec Kit.
+8. Propón un plan de trabajo por fases y tareas pequeñas.
+9. Identifica riesgos técnicos, especialmente importación DOCX, fidelidad de exportación, validación del JSON del editor y seguridad de archivos/IA.
+10. Presenta un informe y espera aprobación antes de implementar funcionalidades.
+
+No generes código de producto todavía. Puedes proponer archivos de configuración o correcciones documentales, pero no las apliques sin explicar qué cambiarías y por qué.
+
+============================================================
+12. ENTREGABLE DE ESTA PRIMERA SESIÓN
+============================================================
+
+Entrega:
+- Resumen del estado del repositorio.
+- Herramientas y versiones detectadas.
+- Estructura Spec Kit recomendada para la versión instalada.
+- Decisiones pendientes, sin inventar respuestas.
+- Riesgos y mitigaciones.
+- Plan de implementación por fases.
+- Lista de archivos que propones crear/modificar.
+- Preguntas concretas que requieren decisión del usuario.
+
+FIN DEL BRIEF

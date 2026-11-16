@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-document-studio.local/schemas/document-content.schema.json",
+  "title": "DocumentContent",
+  "type": "object",
+  "required": [
+    "type",
+    "content"
+  ],
+  "properties": {
+    "type": {
+      "const": "doc"
+    },
+    "content": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "node": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "paragraph",
+            "heading",
+            "bulletList",
+            "orderedList",
+            "listItem",
+            "blockquote",
+            "horizontalRule",
+            "table",
+            "tableRow",
+            "tableCell",
+            "text",
+            "hardBreak",
+            "image"
+          ]
+        },
+        "attrs": {
+          "type": "object"
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "text": {
+          "type": "string"
+        },
+        "marks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "bold",
+                  "italic",
+                  "underline",
+                  "strike",
+                  "link",
+                  "textStyle"
+                ]
+              },
+              "attrs": {
+                "type": "object"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
