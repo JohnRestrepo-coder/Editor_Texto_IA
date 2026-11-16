@@ -7,7 +7,10 @@
     "dev:frontend": "npm --prefix frontend run dev",
     "build:frontend": "npm --prefix frontend run build",
     "dev:backend": "uvicorn backend.app.main:app --reload --port 8000",
-    "test:backend": ".venv/Scripts/pytest -v backend/tests"
+    "lint:backend": ".\\.venv\\Scripts\\ruff check backend",
+    "format:backend": ".\\.venv\\Scripts\\ruff format backend",
+    "test:backend": ".\\.venv\\Scripts\\pytest -v backend/tests",
+    "ci:local": "npm run build:frontend && npm run lint:backend && npm run test:backend"
   },
   "keywords": [
     "tiptap",

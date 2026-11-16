@@ -1,13 +1,18 @@
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, DateTime, JSON
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Column, DateTime, Integer, String
+
 from backend.app.database import Base
+
 
 def generate_uuid() -> str:
     return str(uuid.uuid4())
 
+
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
+
 
 class DocumentModel(Base):
     __tablename__ = "documents"

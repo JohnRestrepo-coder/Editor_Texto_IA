@@ -1,11 +1,13 @@
-from typing import List, Optional
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
-from sqlalchemy import select, desc
+
 from backend.app.modules.document_mgmt.models import DocumentModel
 from backend.app.modules.document_mgmt.schemas import DocumentCreate, DocumentUpdate
 
+
 class DocumentNotFoundError(Exception):
     pass
+
 
 class VersionConflictError(Exception):
     def __init__(self, current_version: int, expected_version: int):
@@ -15,18 +17,11 @@ class VersionConflictError(Exception):
         self.current_version = current_version
         self.expected_version = expected_version
 
+
 class DocumentService:
     @staticmethod
     def default_empty_content() -> dict:
-        return {
-            "type": "doc",
-            "content": [
-                {
-                    "type": "paragraph",
-                    "content": []
-                }
-            ]
-        }
+        return {"type": "doc", "content": [{"type": "paragraph", "content": []}]}
 
     @classmethod
     def create_document(cls, db: Session, doc_in: DocumentCreate) -> DocumentModel:
@@ -40,7 +35,7 @@ class DocumentService:
             title=doc_in.title,
             content=content_dict,
             template_id=doc_in.template_id,
-            version=1
+            version=1,
         )
         db.add(doc)
         db.commit()
@@ -55,7 +50,9 @@ class DocumentService:
         return doc
 
     @classmethod
-    def list_documents(cls, db: Session, limit: int = 50, offset: int = 0) -> List[DocumentModel]:
+    def list_documents(
+        cls, db: Session, limit: int = 50, offset: int = 0
+    ) -> list[DocumentModel]:
         return (
             db.query(DocumentModel)
             .order_by(desc(DocumentModel.updated_at))
@@ -72,8 +69,7 @@ class DocumentService:
 
         if doc.version != doc_in.expected_version:
             raise VersionConflictError(
-                current_version=doc.version,
-                expected_version=doc_in.expected_version
+                current_version=doc.version, expected_version=doc_in.expected_version
             )
 
         if doc_in.title is not None:

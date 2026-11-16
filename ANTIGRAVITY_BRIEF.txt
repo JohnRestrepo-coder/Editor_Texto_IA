@@ -229,4 +229,27 @@ Entrega:
 - Lista de archivos que propones crear/modificar.
 - Preguntas concretas que requieren decisión del usuario.
 
+============================================================
+13. PRUEBAS, INTEGRACIÓN CONTINUA Y MERGE CHECKS
+============================================================
+
+El proyecto debe incluir:
+- Pruebas unitarias para lógica de dominio y validadores.
+- Pruebas de integración para API, persistencia y adaptadores.
+- Pruebas E2E para los flujos críticos.
+- Lint, formato, análisis estático/type checking y build.
+- Pipeline de Integración Continua (CI) que ejecute automáticamente estos controles en cada Pull Request.
+- Required status checks / merge checks para impedir la fusión si fallan los controles obligatorios.
+- Protección de ramas y revisión humana en las ramas estables.
+- Comprobación de conflictos de merge y actualización de la rama antes de fusionar.
+
+Distingue conceptos:
+- CI ejecuta pruebas y verificaciones automáticamente.
+- Required status checks bloquean el merge si los checks fallan.
+- Git detecta conflictos textuales de merge; la revisión de código debe evaluar conflictos semánticos.
+- Un workflow YAML no activa por sí mismo la protección de ramas; se configura en el proveedor Git.
+
+Primera tarea: inspecciona el repositorio y adapta la estrategia. No copies ni actives el workflow de ejemplo sin comprobar scripts, rutas y versiones.
+
+
 FIN DEL BRIEF
